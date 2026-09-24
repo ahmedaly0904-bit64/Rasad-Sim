@@ -203,18 +203,18 @@ python -m venv .venv
 .venv/bin/pytest tests -v
 ```
 
-105 tests · 98% line coverage · 459 of 540 mutants killed · linted with ruff
+121 tests · 98% line coverage · 577 of 682 mutants killed · linted with ruff
 
 The mutation figure is the weakest of the three, and the gap between it and the coverage
 figure is the point: `validate_thresholds` was fully covered and still accepted two equal
 cutoffs, because no test passed the one input that separates `<` from `<=`. Coverage says
 a line ran. A surviving mutant says nothing checked what it did.
 
-Of the 80 survivors, 31 are in `report` — chart labels and text layout that no test pins
-character by character — and many of the rest change only the wording of an error message
-that the tests match by substring. Some cannot be killed by any test: `value < 0` becoming
-`value <= 0` inside a branch that only infinities reach changes nothing. The Omran adapter
-accounts for 11.
+Of the 103 survivors, 31 are in `report` — chart labels and text layout that no test pins
+character by character — and 29 are in the Student-t quantile code, almost all at its
+numerical guards: `> tiny` becoming `>= tiny` at 1e-300, an iteration cap of 1000 becoming
+1001. No input can tell those apart. Many of the rest change only the wording of an error
+message that the tests match by substring. The Omran adapter accounts for 11.
 
 To reproduce: `mutmut run` with `OMRAN_SRC` set to an **absolute** path. mutmut runs the
 tests from inside its own `mutants/` directory, where the default relative path does not
