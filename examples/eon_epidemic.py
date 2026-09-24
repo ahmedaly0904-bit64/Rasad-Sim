@@ -1,9 +1,11 @@
 """Rasad on EoN — an epidemic spreading on a network.
 
-The structure is ready. Your task: decide what to measure, and solve the
-problem of unequal series lengths.
+EoN records one row per infection or recovery event, so every run returns
+series of a different length, which Rasad rejects. The model below puts the
+infected curve on a fixed time grid, so every run is measured at the same
+instants and the runs can be compared step by step.
 
-    .venv/bin/python examples/eon_epidemic.py
+    python examples/eon_epidemic.py
 """
 
 import EoN
