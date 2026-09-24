@@ -10,9 +10,12 @@ parameters, and splits a returned result dict into scalar results (a
 single final number) and time series (lists of numbers), rejecting
 anything a simulation should never produce.
 
-Numpy scalars of numeric dtype and one-dimensional numpy arrays of
-numeric dtype are accepted and converted to plain Python values.
-Booleans are never accepted, whether Python ``bool`` or ``numpy.bool_``.
+Numpy scalars of real numeric dtype and one-dimensional numpy arrays
+of real numeric dtype are accepted and converted to plain Python values.
+"Real numeric" means integer or floating point only: booleans are never
+accepted, whether Python ``bool`` or ``numpy.bool_``, and neither are
+complex numbers, whose imaginary part ``float()`` would discard in
+silence.
 """
 
 import inspect
@@ -47,6 +50,17 @@ def validate_model(fn: Callable[..., dict]) -> None:
         )
 
 
+def _is_real_numeric_dtype(dtype: np.dtype) -> bool:
+    """True for an integer or floating-point dtype, and nothing else.
+
+    ``np.issubdtype(dtype, np.number)`` is too wide: it also admits complex
+    dtypes, which ``float()`` narrows to the real part with only a warning,
+    and ``timedelta64``, which numpy counts as a signed integer. Testing the
+    kind directly admits exactly ``i``nteger, ``u``nsigned and ``f``loat.
+    """
+    return dtype.kind in "iuf"
+
+
 def _is_number(value: Any) -> bool:
     """True for a real number — never for a boolean, of either flavour.
 
@@ -57,7 +71,7 @@ def _is_number(value: Any) -> bool:
         return False
     if isinstance(value, (int, float)):
         return True
-    return isinstance(value, np.generic) and np.issubdtype(value.dtype, np.number)
+    return isinstance(value, np.generic) and _is_real_numeric_dtype(value.dtype)
 
 
 def split_outputs(out: dict[str, Any]) -> tuple[dict[str, float], dict[str, list[float]]]:
@@ -68,9 +82,9 @@ def split_outputs(out: dict[str, Any]) -> tuple[dict[str, float], dict[str, list
     out
         The dict returned by a model run. Each value must be a number
         (a scalar result) or a list/tuple of numbers (a time series).
-        Numpy scalars of numeric dtype and zero-dimensional numpy arrays
-        of numeric dtype count as numbers; one-dimensional numpy arrays
-        of numeric dtype count as time series.
+        Numpy scalars of real numeric dtype and zero-dimensional numpy
+        arrays of real numeric dtype count as numbers; one-dimensional
+        numpy arrays of real numeric dtype count as time series.
 
     Returns
     -------
@@ -83,9 +97,10 @@ def split_outputs(out: dict[str, Any]) -> tuple[dict[str, float], dict[str, list
     ------
     TypeError
         When a value is a ``bool`` or ``numpy.bool_``, a ``str``,
-        ``bytes``, or any other type that is neither a single number
-        nor a sequence of numbers, including numpy arrays with two or
-        more dimensions and arrays of boolean or object dtype.
+        ``bytes``, a complex number, or any other type that is neither a
+        single real number nor a sequence of real numbers, including numpy
+        arrays with two or more dimensions and arrays of boolean, complex
+        or object dtype.
     """
     scalars: dict[str, float] = {}
     series: dict[str, list[float]] = {}
@@ -94,9 +109,9 @@ def split_outputs(out: dict[str, Any]) -> tuple[dict[str, float], dict[str, list
         if isinstance(value, (bool, np.bool_)):
             raise TypeError(f"unsupported output {key!r}: boolean values are not allowed")
         if isinstance(value, np.ndarray):
-            if value.ndim == 0 and np.issubdtype(value.dtype, np.number):
+            if value.ndim == 0 and _is_real_numeric_dtype(value.dtype):
                 scalars[key] = float(value)
-            elif value.ndim == 1 and np.issubdtype(value.dtype, np.number):
+            elif value.ndim == 1 and _is_real_numeric_dtype(value.dtype):
                 series[key] = [float(item) for item in value]
             elif np.issubdtype(value.dtype, np.bool_):
                 raise TypeError(
@@ -108,7 +123,7 @@ def split_outputs(out: dict[str, Any]) -> tuple[dict[str, float], dict[str, list
                     f"{value.dtype} and {value.ndim} dimension(s) is not supported"
                 )
         elif isinstance(value, (int, float)) or (
-            isinstance(value, np.generic) and np.issubdtype(value.dtype, np.number)
+            isinstance(value, np.generic) and _is_real_numeric_dtype(value.dtype)
         ):
             scalars[key] = float(value)
         elif isinstance(value, (list, tuple)):

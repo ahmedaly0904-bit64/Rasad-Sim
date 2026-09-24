@@ -117,3 +117,25 @@ def test_rejects_a_list_of_strings_with_a_clear_message():
 def test_rejects_a_list_of_nested_lists():
     with pytest.raises(TypeError, match="unsupported output"):
         split_outputs({"grid": [[1.0, 2.0], [3.0, 4.0]]})
+
+
+def test_rejects_a_numpy_complex_scalar():
+    """A complex value silently loses its imaginary part to float(), so every statistic below would describe the real part alone."""
+    with pytest.raises(TypeError, match="unsupported output"):
+        split_outputs({"amplitude": np.complex128(1 + 2j)})
+
+
+def test_rejects_a_numpy_complex_array():
+    with pytest.raises(TypeError, match="unsupported output"):
+        split_outputs({"wave": np.array([1 + 2j, 3 + 4j])})
+
+
+def test_rejects_a_list_of_numpy_complex_values():
+    with pytest.raises(TypeError, match="unsupported output"):
+        split_outputs({"wave": [np.complex128(1 + 2j), np.complex128(3 + 4j)]})
+
+
+def test_rejects_a_timedelta_output_by_naming_the_key():
+    """timedelta64 counts as a numpy integer, so it passed the numeric gate and failed later in float() with a message that never named the output."""
+    with pytest.raises(TypeError, match="unsupported output"):
+        split_outputs({"elapsed": np.timedelta64(5, "D")})
