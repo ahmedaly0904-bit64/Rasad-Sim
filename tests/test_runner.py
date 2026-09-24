@@ -43,6 +43,14 @@ def test_rejects_inconsistent_output_keys():
         run_all(unstable, make_plan({}, runs=2))
 
 
+def test_inconsistent_keys_of_mixed_types_are_reported_not_crashed_on():
+    def unstable(params, seed):
+        return {1: 1.0, "a": 1.0} if seed % 2 == 0 else {"b": 1.0}
+
+    with pytest.raises(ValueError, match="same output keys"):
+        run_all(unstable, make_plan({}, runs=2))
+
+
 def test_a_model_failure_carries_the_seed_that_caused_it():
     def crash_on_seed_3(params, seed):
         if seed == 3:

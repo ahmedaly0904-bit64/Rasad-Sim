@@ -77,7 +77,9 @@ def measure(
         for name, curve in series.items():
             series_curves.setdefault(name, []).append(curve)
 
-    for name in sorted(scalar_values.keys() | series_curves.keys()):
+    # key=repr: nothing requires output names to be strings, and plain
+    # sorted() raises TypeError on a mix such as 1 and "a".
+    for name in sorted(scalar_values.keys() | series_curves.keys(), key=repr):
         n_scalars = len(scalar_values.get(name, ()))
         n_series = len(series_curves.get(name, ()))
         if n_scalars != runs and n_series != runs:

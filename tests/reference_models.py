@@ -57,3 +57,9 @@ def nan_series_model(params: dict, seed: int) -> dict:
     """Puts a NaN in one run's series only.
     Expect: rejected, exactly as a NaN scalar already is."""
     return {"trace": [1.0, float("nan") if seed == 2 else float(seed), 3.0]}
+
+
+def mixed_key_model(params: dict, seed: int) -> dict:
+    """Names one output with an int and one with a str. Nothing requires
+    output names to be strings. Expect: measured like any other model."""
+    return {1: float(seed), "a": float(seed * 2)}

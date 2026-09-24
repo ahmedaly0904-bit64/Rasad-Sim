@@ -3,6 +3,7 @@ from reference_models import (
     constant_model,
     empty_series_model,
     flat_series_model,
+    mixed_key_model,
     nan_series_model,
     normal_model,
     random_walk_model,
@@ -184,3 +185,10 @@ def test_summary_shows_a_mean_interval_tighter_than_the_spread():
     text = report.summary()
     assert "90% CI [" in text
     assert "p05-p95 [" in text
+
+
+def test_output_names_of_mixed_types_are_measured():
+    """sorted() over names like 1 and "a" raised TypeError before a single
+    statistic was computed."""
+    report = rasad.measure(mixed_key_model, params={}, runs=3)
+    assert set(report.scalars) == {1, "a"}
