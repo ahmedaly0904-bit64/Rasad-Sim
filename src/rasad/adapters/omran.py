@@ -37,7 +37,9 @@ def make_omran_run(omran_src: str, years: int) -> Callable[[dict, int], dict]:
         A closure ``run(params, seed)`` that seeds Python's global RNG,
         builds a fresh set of nations, steps Omran's ``WorldModel`` for
         ``years`` years with stdout suppressed, and returns Omran's output
-        as scalars plus a population trace. ``params`` accepts a single
+        as scalars plus a population trace. The global RNG state is saved
+        before seeding and restored afterwards, so a run is reproducible
+        from its seed without leaving the caller's randomness reseeded. ``params`` accepts a single
         key, ``nations``: a list of dicts, each holding the keyword
         arguments for Omran's ``Nation(name, population, food,
         growth_rate)``. When the key is absent, the three defaults in
@@ -67,19 +69,28 @@ def make_omran_run(omran_src: str, years: int) -> Callable[[dict, int], dict]:
                 "The only supported key is 'nations'."
             )
 
-        random.seed(seed)
+        # Omran draws from the random module's global generator, so seeding
+        # it is the only way to control a run. The caller's state is saved
+        # and put back afterwards: without this, measuring a model would
+        # leave the whole process reseeded at base_seed + runs - 1, quietly
+        # taking over the randomness of any code that runs later.
+        rng_state = random.getstate()
+        try:
+            random.seed(seed)
 
-        nations_spec = params.get("nations", _DEFAULT_NATIONS)
-        nations = [Nation(**spec) for spec in nations_spec]
+            nations_spec = params.get("nations", _DEFAULT_NATIONS)
+            nations = [Nation(**spec) for spec in nations_spec]
 
-        population_trace = []
-        with contextlib.redirect_stdout(io.StringIO()):
-            world = WorldModel(nations)
-            for _ in range(years):
-                world.step()
-                population_trace.append(
-                    sum(n.population for n in world.nations if n.is_alive)
-                )
+            population_trace = []
+            with contextlib.redirect_stdout(io.StringIO()):
+                world = WorldModel(nations)
+                for _ in range(years):
+                    world.step()
+                    population_trace.append(
+                        sum(n.population for n in world.nations if n.is_alive)
+                    )
+        finally:
+            random.setstate(rng_state)
 
         return {
             "final_total_population": float(

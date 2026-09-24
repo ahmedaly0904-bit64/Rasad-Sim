@@ -89,3 +89,20 @@ def test_nations_can_be_configured_through_params():
     )
     assert out["survivors"] <= 2
     assert len(out["population_trace"]) == 5
+
+
+def test_a_successful_call_does_not_touch_the_global_rng():
+    """Omran draws from the random module, so the adapter must seed it — but it must hand the caller's stream back, or measure() silently reseeds the whole process."""
+    import random
+
+    run = make_omran_run(OMRAN_SRC, years=5)
+    random.seed(12345)
+    before = random.random()
+    random.seed(12345)
+    run({}, 999)
+    assert random.random() == before
+
+
+def test_seeding_is_still_reproducible_after_restoring_the_state():
+    run = make_omran_run(OMRAN_SRC, years=5)
+    assert run({}, 7) == run({}, 7)
