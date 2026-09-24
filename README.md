@@ -219,15 +219,13 @@ have produced plausible, meaningless numbers.
 
 ## Notes on the implementation
 
-Three analyses of the code, in Arabic:
+Two analyses of the code, in Arabic:
 
 - [فئات المدخلات](docs/input-classes.md) — the five input classes `summarize()` actually
   distinguishes, each with the test that covers it, and why branch order decides which class
   a list falls into.
 - [كم تشغيلة تكفي؟](docs/how-many-runs.md) — the standard error of the mean applied to Omran:
   100 runs pin the mean to 2.8%, and reaching 1% costs 784.
-- [حدود الوحدات](docs/module-boundaries.md) — the deletion test applied to each of Rasad's own
-  modules, separating splits forced by something that happened from splits made on a guess.
 
 ---
 
