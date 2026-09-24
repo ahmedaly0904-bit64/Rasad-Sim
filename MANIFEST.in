@@ -1,0 +1,8 @@
+# setuptools' default sdist rule picks up tests/test_*.py and nothing else,
+# which drops conftest.py and reference_models.py — the two files every test
+# module imports. Shipped tests that cannot run are worse than no tests, so
+# take the whole directory.
+graft tests
+
+global-exclude *.py[cod]
+prune **/__pycache__

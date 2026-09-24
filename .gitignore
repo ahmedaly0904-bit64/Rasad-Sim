@@ -17,6 +17,9 @@ mutants/
 
 # local notes and tooling, not part of the published project
 docs/*.pdf
+# Arabic-named personal notes: the patterns above are all ASCII, so a file
+# like docs/رصد-قاموس-*.md slipped past them and would be caught by git add .
+docs/رصد-*.md
 docs/*.excalidraw*
 docs/superpowers/
 docs/*-setup.md
