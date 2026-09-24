@@ -8,11 +8,11 @@
 
 | # | الفئة | عيّنات | السلوك | التغطية |
 |---|---|---|---|---|
-| ١ | أقل من قيمتين | `[7.0]` · `[]` | `ValueError` | `test_requires_at_least_two_values` |
-| ٢ | القيم كلها متساوية | `[2,2]` · `[0,0,0,0]` | `std = 0` → `cv = 0` | `test_constant_values_have_zero_spread` |
-| ٣ | المتوسط صفر والقيم متغيّرة | `[-5,5]` · `[-3,3,0]` | `cv = inf` | `test_cv_is_infinite_when_mean_is_zero` |
-| ٤ | تحتوي قيمة غير منتهية | `[1,inf]` · `[0.5,nan]` | `ValueError` | `test_rejects_non_finite_values` |
-| ٥ | الحالة العادية | `[1,2,3]` · `[100,200,300]` | حساب كامل | `test_std_estimates_known_sigma` |
+| 1 | أقل من قيمتين | `[7.0]` · `[]` | `ValueError` | `test_requires_at_least_two_values` |
+| 2 | القيم كلها متساوية | `[2,2]` · `[0,0,0,0]` | `std = 0` → `cv = 0` | `test_constant_values_have_zero_spread` |
+| 3 | المتوسط صفر والقيم متغيّرة | `[-5,5]` · `[-3,3,0]` | `cv = inf` | `test_cv_is_infinite_when_mean_is_zero` |
+| 4 | تحتوي قيمة غير منتهية | `[1,inf]` · `[0.5,nan]` | `ValueError` | `test_rejects_non_finite_values` |
+| 5 | الحالة العادية | `[1,2,3]` · `[100,200,300]` | حساب كامل | `test_std_estimates_known_sigma` |
 
 ## الفئة الثانية تبتلع الثالثة
 
