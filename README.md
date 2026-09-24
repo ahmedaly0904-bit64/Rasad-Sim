@@ -31,10 +31,13 @@ and you get numbers — a final population, a count of wars, a year the collapse
 The problem was that nobody knew whether those numbers meant anything.
 
 Change the random seed and they change. Was a collapse in year 240 a property of the model,
-or an accident of one run? There was no way to answer without measuring, and no tool that
-measured it — the frameworks that do sensitivity analysis are built for engineering and
-physics models, and the agent-based modelling field is repeatedly criticised for publishing
-results without error bars.
+or an accident of one run? There was no way to answer without measuring, and the tools that
+exist answer a different question: [SALib](https://salib.readthedocs.io) and libraries like it
+measure which *parameter* drives a result, not how much of it is the seed. The field knows
+the gap. A 2015 review of agent-based output analysis by ten modellers in
+[JASSS](https://www.jasss.org/18/4/4.html) found run counts that were too low, conveniently
+chosen, or exorbitantly high — 100 runs or fewer being common — and systematic ways of
+choosing them underused.
 
 So Rasad was written to answer that question, under one hard constraint: **it must not touch
 Omran.** It observes from the outside and modifies nothing, the way an instrument measures a
@@ -84,6 +87,12 @@ You get, for every output, two lines: where the **mean** sits — with its stand
 90% Student-t confidence interval — and where **one run** lands — standard deviation, cv, a
 p05–p95 interval, and a variability class, **low**, **moderate**, or **high**. Plus a curve
 showing how far the runs drift apart over time.
+
+`runs=100` is the convenient number that review describes, so treat it as a starting point,
+not a recommendation: the mean's standard error and interval show whether 100 runs are enough
+for the claim you want to make.
+[How many runs is enough?](https://github.com/ahmedaly0904-bit64/rasad/blob/master/docs/how-many-runs.md)
+(in Arabic) works it through for Omran: 100 runs pin the mean to 2.8%, and 1% takes 784.
 
 ---
 
