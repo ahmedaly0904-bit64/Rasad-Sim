@@ -1,6 +1,6 @@
 [project]
 name = "rasad-sim"
-version = "0.2.1"
+version = "0.2.2"
 description = "Measure how much of a stochastic simulation's result is a property of the model and how much is the random seed."
 readme = "README.md"
 requires-python = ">=3.12"
