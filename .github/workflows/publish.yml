@@ -38,3 +38,7 @@ jobs:
           path: dist/
 
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # A version uploaded by hand is already on PyPI; without this the
+          # job fails the whole release on the file that is already there.
+          skip-existing: true
