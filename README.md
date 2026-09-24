@@ -81,7 +81,7 @@ report.plot().write_html("divergence.html")
 ```
 
 You get, for every output, two lines: where the **mean** sits — with its standard error and a
-90% bootstrap confidence interval — and where **one run** lands — standard deviation, cv, a
+90% Student-t confidence interval — and where **one run** lands — standard deviation, cv, a
 p05–p95 interval, and a variability class, **low**, **moderate**, or **high**. Plus a curve
 showing how far the runs drift apart over time.
 
@@ -309,8 +309,14 @@ What they did not catch — the logic errors that shipped:
   part**, so every statistic described the real part alone. A plain Python `complex` was
   rejected; a numpy one was not. A later code review of the whole package found it, together
   with a threshold check that raised the wrong exception type, a `classify` that called `nan`
-  *high*, and an adapter that left the caller's global random state reseeded. All fixed in
-  0.2.1, each with a test that failed before the fix.
+  *high*, and an adapter that left the caller's global random state reseeded.
+- **The "90% confidence interval" on the mean was not 90% at small run counts.** It was a
+  percentile bootstrap, which cannot reach outside the smallest and largest run, so it held
+  the true mean about 50% of the time with two runs, 79% with five and 84% with ten. It is
+  now a Student-t interval, which holds close to 90% at every run count, and costs
+  microseconds instead of ten thousand resamples per output.
+
+All fixed in 0.2.1, each with a test that failed before the fix.
 
 That is the boundary. Tests prove right the arithmetic they were written for. Real data and a
 second reading find the cases nobody thought to write a test for.
