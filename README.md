@@ -41,7 +41,7 @@ Omran.** It observes from the outside and modifies nothing, the way an instrumen
 specimen without altering it. That constraint shaped the architecture — and it is why Rasad
 works on any simulation, not just the one it was written for.
 
-What it found is in [`FINDINGS.md`](FINDINGS.md), and it was not what anyone expected.
+What it found is in [`FINDINGS.md`](https://github.com/ahmedaly0904-bit64/rasad/blob/master/FINDINGS.md), and it was not what anyone expected.
 
 ---
 
@@ -118,12 +118,12 @@ This was then confirmed with Rasad out of the path entirely: Omran's own `main.p
 hard-coded `random.seed(42)`, and running that file directly eight times gave **four distinct
 results**.
 
-Full write-up: [`FINDINGS.md`](FINDINGS.md)
+Full write-up: [`FINDINGS.md`](https://github.com/ahmedaly0904-bit64/rasad/blob/master/FINDINGS.md)
 
 ### Aggregates can be stable while their parts are noise
 
 On a [SimPy](https://simpy.readthedocs.io) machine-shop simulation
-([`examples/simpy_machine_shop.py`](examples/simpy_machine_shop.py)):
+([`examples/simpy_machine_shop.py`](https://github.com/ahmedaly0904-bit64/rasad/blob/master/examples/simpy_machine_shop.py)):
 
 | Output | cv | Verdict |
 |---|---|---|
@@ -147,7 +147,7 @@ one run and saying *"machine 7 is underperforming, investigate it"* is chasing a
 | [EoN](https://epidemicsonnetworks.readthedocs.io) | SIR on a network | works; epidemic duration has high variability (7.5 → 14.7) |
 | [Omran](https://github.com/ahmedaly0904-bit64/Omran) | asabiyyah model | the model it was written for; see above |
 
-Examples: [`examples/`](examples/)
+Examples: [`examples/`](https://github.com/ahmedaly0904-bit64/rasad/tree/master/examples)
 
 A control worth stating: the SimPy and Mesa examples reproduce byte-identically across
 separate processes. That establishes that Omran's non-reproducibility is a bug in Omran,
@@ -229,10 +229,10 @@ have produced plausible, meaningless numbers.
 
 Two analyses of the code, in Arabic:
 
-- [فئات المدخلات](docs/input-classes.md) — the five input classes `summarize()` actually
+- [فئات المدخلات](https://github.com/ahmedaly0904-bit64/rasad/blob/master/docs/input-classes.md) — the five input classes `summarize()` actually
   distinguishes, each with the test that covers it, and why branch order decides which class
   a list falls into.
-- [كم تشغيلة تكفي؟](docs/how-many-runs.md) — the standard error of the mean applied to Omran:
+- [كم تشغيلة تكفي؟](https://github.com/ahmedaly0904-bit64/rasad/blob/master/docs/how-many-runs.md) — the standard error of the mean applied to Omran:
   100 runs pin the mean to 2.8%, and reaching 1% costs 784.
 
 ---
