@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from rasad.analyzer import THRESHOLDS, classify, divergence, summarize
+from rasad.analyzer import THRESHOLDS, classify, divergence, summarize, t_quantile
 
 
 def test_rejects_non_finite_values():
@@ -204,27 +204,59 @@ def test_the_mean_interval_brackets_the_true_mean():
     assert result["ci_low"] < 100.0 < result["ci_high"]
 
 
-def test_the_bootstrap_agrees_with_normal_theory_on_symmetric_data():
-    """Not a tautology: it is the check that the resampling is wired up
-    right. The two must diverge on skewed data, which is why the interval
-    is a bootstrap and not mean +/- 1.645 * se."""
-    rng = np.random.default_rng(0)
-    result = summarize(rng.normal(100.0, 15.0, 500).tolist())
-    interval = result["ci_high"] - result["ci_low"]
-    assert interval == pytest.approx(2 * 1.645 * result["se"], rel=0.1)
+def test_the_mean_interval_is_mean_plus_minus_t_times_se():
+    result = summarize([1.0, 2.0, 3.0, 4.0, 5.0])
+    half_width = t_quantile(0.95, 4) * result["se"]
+    assert result["ci_low"] == pytest.approx(3.0 - half_width)
+    assert result["ci_high"] == pytest.approx(3.0 + half_width)
 
 
-def test_a_sample_larger_than_one_bootstrap_chunk_still_summarizes():
-    """The bootstrap resamples in bounded chunks so peak memory does not grow
-    with the run count. Crossing a chunk boundary must not change the answer."""
-    rng = np.random.default_rng(2)
-    values = rng.normal(50.0, 5.0, 5000).tolist()
-    result = summarize(values)
-    assert result["ci_low"] < 50.0 < result["ci_high"]
-    assert summarize(values) == result
+@pytest.mark.parametrize(
+    ("df", "expected"),
+    [
+        # Published one-sided 0.95 critical values of Student's t.
+        (1, 6.313752),
+        (2, 2.919986),
+        (4, 2.131847),
+        (10, 1.812461),
+        (30, 1.697261),
+        (1000, 1.646379),
+    ],
+)
+def test_t_quantile_matches_the_published_table(df, expected):
+    assert t_quantile(0.95, df) == pytest.approx(expected, rel=1e-6)
+
+
+def test_t_quantile_approaches_the_normal_quantile_for_large_df():
+    assert t_quantile(0.95, 1_000_000) == pytest.approx(1.644854, rel=1e-5)
+
+
+@pytest.mark.parametrize(("p", "df"), [(0.5, 3), (1.0, 3), (0.95, 0)])
+def test_t_quantile_rejects_arguments_outside_its_domain(p, df):
+    with pytest.raises(ValueError):
+        t_quantile(p, df)
+
+
+def test_two_runs_give_an_interval_as_wide_as_two_runs_deserve():
+    """A percentile bootstrap cannot reach outside [min, max], so with two
+    runs its "90%" interval covered the true mean about half the time. The
+    t interval is mean +/- 6.31 se: wide, and honestly so."""
+    result = summarize([1.0, 2.0])
+    assert result["ci_low"] == pytest.approx(1.5 - 6.313752 * 0.5)
+    assert result["ci_high"] == pytest.approx(1.5 + 6.313752 * 0.5)
+
+
+def test_the_mean_interval_covers_the_true_mean_about_90_percent_of_the_time():
+    """The label says 90%; at a small run count it must mean it."""
+    rng = np.random.default_rng(3)
+    trials = 2000
+    covered = 0
+    for _ in range(trials):
+        result = summarize(rng.normal(10.0, 2.0, 5).tolist())
+        covered += result["ci_low"] <= 10.0 <= result["ci_high"]
+    assert covered / trials == pytest.approx(0.90, abs=0.02)
 
 
 def test_summarize_is_a_pure_function_of_its_input():
-    """The bootstrap must not make the summary vary between calls."""
     values = [1.0, 5.0, 2.0, 8.0, 3.0, 13.0, 21.0]
     assert summarize(values) == summarize(values)

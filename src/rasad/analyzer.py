@@ -5,7 +5,7 @@ given were produced. It only describes the spread and location of a
 sample: count, mean, sample standard deviation, coefficient of
 variation, extrema, and percentile interval — and, separately, how
 well that sample pins its own mean: the standard error and a
-bootstrap confidence interval.
+Student-t confidence interval.
 """
 
 import math
@@ -19,19 +19,78 @@ import numpy as np
 # which case these defaults are ignored.
 THRESHOLDS: dict[str, float] = {"low": 0.05, "moderate": 0.20}
 
-# Fixed bootstrap settings so the confidence interval is a pure function of
-# the input: a seeded generator always yields the same resample draws, so the
-# same values in give byte-identical ``ci_low`` / ``ci_high`` out, in every
-# process. The seed is deliberately never drawn from the clock or from global
-# numpy state.
-_BOOTSTRAP_RESAMPLES = 10_000
-_BOOTSTRAP_SEED = 0
-# Resample in chunks of at most this many elements. A single (resamples, n)
-# draw would allocate memory linear in the run count — 1.5 GB at n=10,000,
-# a run count this library's own docs contemplate. Chunking bounds the peak
-# regardless of n, and numpy's generator consumes its bit stream value by
-# value, so the chunked draws are the identical sequence: same numbers out.
-_BOOTSTRAP_CHUNK_ELEMENTS = 4_000_000
+# The confidence level of the interval on the mean, as the one-sided upper
+# probability: 0.95 leaves 5% in each tail, a 90% two-sided interval.
+_CI_UPPER = 0.95
+
+
+def _betacf(a: float, b: float, x: float) -> float:
+    """Continued fraction for the regularized incomplete beta (Lentz's method)."""
+    tiny = 1e-300
+    qab, qap, qam = a + b, a + 1.0, a - 1.0
+    c = 1.0
+    d = 1.0 - qab * x / qap
+    d = 1.0 / (d if abs(d) > tiny else tiny)
+    h = d
+    for m in range(1, 1000):
+        m2 = 2 * m
+        for aa in (
+            m * (b - m) * x / ((qam + m2) * (a + m2)),
+            -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2)),
+        ):
+            d = 1.0 + aa * d
+            d = 1.0 / (d if abs(d) > tiny else tiny)
+            c = 1.0 + aa / c
+            c = c if abs(c) > tiny else tiny
+            h *= d * c
+        if abs(d * c - 1.0) < 1e-15:
+            return h
+    raise ArithmeticError("incomplete beta continued fraction did not converge")
+
+
+def _t_two_sided_tail(t: float, df: int) -> float:
+    """P(|T| > t) for Student's t with ``df`` degrees of freedom."""
+    a, b, x = df / 2.0, 0.5, df / (df + t * t)
+    if x >= 1.0:
+        return 1.0
+    log_front = (
+        math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b)
+        + a * math.log(x) + b * math.log1p(-x)
+    )
+    if x < (a + 1.0) / (a + b + 2.0):
+        return math.exp(log_front) * _betacf(a, b, x) / a
+    return 1.0 - math.exp(log_front) * _betacf(b, a, 1.0 - x) / b
+
+
+def t_quantile(p: float, df: int) -> float:
+    """The ``p`` quantile of Student's t distribution, for ``p`` above 0.5.
+
+    Computed by bisection on the exact distribution function, so the
+    library needs nothing beyond the standard library and numpy. Agrees
+    with ``scipy.stats.t.ppf`` to better than one part in 10^8.
+
+    Raises
+    ------
+    ValueError
+        When ``p`` is not strictly between 0.5 and 1, or ``df`` is below 1.
+    """
+    if not 0.5 < p < 1.0:
+        raise ValueError(f"p must be strictly between 0.5 and 1, got {p!r}")
+    if df < 1:
+        raise ValueError(f"df must be at least 1, got {df!r}")
+    tail = 2.0 * (1.0 - p)
+    lo, hi = 0.0, 1.0
+    while _t_two_sided_tail(hi, df) > tail:
+        lo, hi = hi, hi * 2.0
+    for _ in range(200):
+        mid = (lo + hi) / 2.0
+        if _t_two_sided_tail(mid, df) > tail:
+            lo = mid
+        else:
+            hi = mid
+        if hi - lo <= 1e-15 * hi:
+            break
+    return (lo + hi) / 2.0
 
 
 def summarize(values: Sequence[float]) -> dict[str, float | int]:
@@ -53,8 +112,11 @@ def summarize(values: Sequence[float]) -> dict[str, float | int]:
 
         ``se``, ``ci_low`` and ``ci_high`` describe the uncertainty of the
         mean: ``se`` is the standard error, ``std / sqrt(n)``, and
-        ``ci_low``/``ci_high`` bound a 90% bootstrap percentile confidence
-        interval on the mean. ``std``, ``cv``, ``p05`` and ``p95``, by
+        ``ci_low``/``ci_high`` bound a 90% Student-t confidence interval on
+        the mean, ``mean ± t(0.95, n - 1) * se``. The t multiplier is what
+        keeps the stated 90% honest at the small run counts this library
+        allows: with two runs it is 6.31, not the 1.645 of large samples,
+        so the interval is as wide as two runs deserve. ``std``, ``cv``, ``p05`` and ``p95``, by
         contrast, describe the spread of the sample: where a single run
         lands. The two answer different questions — how well the runs pin
         the average versus how far apart the runs lie — and are not
@@ -89,19 +151,9 @@ def summarize(values: Sequence[float]) -> dict[str, float | int]:
     p05 = float(np.percentile(arr, 5))
     p95 = float(np.percentile(arr, 95))
     se = std / math.sqrt(n)
-    if std == 0.0:
-        ci_low = ci_high = mean
-    else:
-        rng = np.random.default_rng(_BOOTSTRAP_SEED)
-        rows = max(1, _BOOTSTRAP_CHUNK_ELEMENTS // n)
-        means = np.empty(_BOOTSTRAP_RESAMPLES)
-        for start in range(0, _BOOTSTRAP_RESAMPLES, rows):
-            size = min(rows, _BOOTSTRAP_RESAMPLES - start)
-            means[start : start + size] = arr[
-                rng.integers(0, n, size=(size, n))
-            ].mean(axis=1)
-        ci_low = float(np.percentile(means, 5))
-        ci_high = float(np.percentile(means, 95))
+    half_width = t_quantile(_CI_UPPER, n - 1) * se
+    ci_low = mean - half_width
+    ci_high = mean + half_width
 
     return {
         "n": n,

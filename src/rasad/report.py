@@ -82,7 +82,9 @@ class Report:
             one line per series showing how the divergence grew. Each
             scalar block has a ``mean`` line and a ``spread`` line:
             ``mean`` reports the average with its standard error and
-            90% confidence interval, which is where the mean sits;
+            90% confidence interval, which is where the mean sits
+            (the mean alone when a stats dict lacks ``se``, ``ci_low``
+            or ``ci_high``, as stats saved by older versions do);
             ``spread`` reports the standard deviation, coefficient of
             variation and p05-p95 interval, which is where one run
             lands, plus the variability label.
@@ -101,11 +103,15 @@ class Report:
             )
             for name, stats in self.scalars.items():
                 lines.append(f"  {name}")
-                lines.append(
-                    f"    {'mean':<6} {_fmt(stats['mean'])} ± "
-                    f"{_fmt(stats['se'])} · 90% CI "
-                    f"[{_fmt(stats['ci_low'])}, {_fmt(stats['ci_high'])}]"
-                )
+                mean_line = f"    {'mean':<6} {_fmt(stats['mean'])}"
+                # Stats saved before the mean's uncertainty was measured have
+                # no se or interval; render the mean alone rather than fail.
+                if {"se", "ci_low", "ci_high"} <= stats.keys():
+                    mean_line += (
+                        f" ± {_fmt(stats['se'])} · 90% CI "
+                        f"[{_fmt(stats['ci_low'])}, {_fmt(stats['ci_high'])}]"
+                    )
+                lines.append(mean_line)
                 lines.append(
                     f"    {'spread':<6} std {_fmt(stats['std'])} · "
                     f"cv {_fmt_ratio(stats['cv'])} · p05-p95 "

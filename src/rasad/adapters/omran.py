@@ -50,6 +50,9 @@ def make_omran_run(omran_src: str, years: int) -> Callable[[dict, int], dict]:
         When the returned ``run`` is called with a ``params`` dict that
         contains any key other than ``nations``. The offending keys are
         named in the message so a setting can never be silently ignored.
+        Whatever Omran's ``Nation`` raises for a malformed ``nations``
+        entry propagates unchanged. Either way, a rejected call leaves
+        Python's global RNG exactly as it found it.
     """
     if omran_src not in sys.path:
         sys.path.insert(0, omran_src)
@@ -67,10 +70,18 @@ def make_omran_run(omran_src: str, years: int) -> Callable[[dict, int], dict]:
                 "The only supported key is 'nations'."
             )
 
+        # Nation() may draw from the RNG, so it must be built after seeding
+        # for a run to be reproducible. A spec it rejects (a missing or
+        # extra argument, an entry that is not a dict) is still a rejected
+        # call, so the caller's RNG state is put back before re-raising.
+        caller_state = random.getstate()
         random.seed(seed)
-
-        nations_spec = params.get("nations", _DEFAULT_NATIONS)
-        nations = [Nation(**spec) for spec in nations_spec]
+        try:
+            nations_spec = params.get("nations", _DEFAULT_NATIONS)
+            nations = [Nation(**spec) for spec in nations_spec]
+        except Exception:
+            random.setstate(caller_state)
+            raise
 
         population_trace = []
         with contextlib.redirect_stdout(io.StringIO()):

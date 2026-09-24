@@ -3,6 +3,7 @@ from reference_models import (
     constant_model,
     empty_series_model,
     flat_series_model,
+    mixed_key_model,
     nan_series_model,
     normal_model,
     random_walk_model,
@@ -11,7 +12,8 @@ from reference_models import (
 )
 
 import rasad
-from rasad.report import _fmt
+from rasad.analyzer import THRESHOLDS
+from rasad.report import Report, _fmt
 
 
 def test_constant_model_has_low_variability():
@@ -184,3 +186,17 @@ def test_summary_shows_a_mean_interval_tighter_than_the_spread():
     text = report.summary()
     assert "90% CI [" in text
     assert "p05-p95 [" in text
+
+
+def test_output_names_of_mixed_types_are_measured():
+    report = rasad.measure(mixed_key_model, params={}, runs=3)
+    assert set(report.scalars) == {1, "a"}
+
+
+def test_summary_renders_stats_that_predate_the_mean_interval():
+    """Report is public; stats saved without se or a CI must still render."""
+    stats = {"mean": 1.0, "std": 0.0, "cv": 0.0, "p05": 1.0, "p95": 1.0, "variability": "low"}
+    report = Report(scalars={"x": stats}, series={}, runs=2, thresholds=dict(THRESHOLDS))
+    text = report.summary()
+    assert "    mean   1.00\n" in text
+    assert "90% CI" not in text

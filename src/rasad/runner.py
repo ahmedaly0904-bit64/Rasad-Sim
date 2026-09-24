@@ -60,7 +60,7 @@ def run_all(fn: Callable[..., dict], plan: list[tuple[dict, int]]) -> list[dict]
         if results and out.keys() != results[0].keys():
             raise ValueError(
                 "every run must return the same output keys, "
-                f"got {sorted(out)} after {sorted(results[0])}"
+                f"got {sorted(out, key=repr)} after {sorted(results[0], key=repr)}"
             )
         results.append(out)
 
