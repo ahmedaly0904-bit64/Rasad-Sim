@@ -62,6 +62,12 @@ def test_classify_boundaries():
     assert classify(math.inf) == "high"
 
 
+def test_classify_rejects_nan_instead_of_calling_it_high():
+    """Every comparison with nan is False, so it fell through to "high": a broken run turned into a confident verdict. inf stays valid — it is the documented cv of a zero mean with spread."""
+    with pytest.raises(ValueError, match="nan"):
+        classify(math.nan)
+
+
 def test_identical_series_never_diverge():
     series = [[1.0, 2.0, 3.0, 4.0]] * 10
     assert divergence(series) == [0.0, 0.0, 0.0, 0.0]

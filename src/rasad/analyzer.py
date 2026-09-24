@@ -186,8 +186,21 @@ def classify(cv: float, thresholds: dict[str, float] | None = None) -> str:
     -------
     str
         ``"low"`` below the low threshold, ``"moderate"`` up to and
-        including the moderate threshold, ``"high"`` beyond it.
+        including the moderate threshold, ``"high"`` beyond it —
+        including ``inf``.
+
+    Raises
+    ------
+    ValueError
+        When ``cv`` is nan, or when ``thresholds`` fails
+        :func:`validate_thresholds`.
     """
+    # nan, not every non-finite value: every comparison with nan is False, so
+    # it would fall through to "high" and turn a broken run into a confident
+    # verdict. inf must stay valid — summarize returns it for a zero mean
+    # with spread, and "high" is the right answer for it.
+    if math.isnan(cv):
+        raise ValueError("cannot classify a nan coefficient of variation")
     # kept as if/else rather than a ternary: the two branches do different
     # things — one picks a default, the other validates untrusted input.
     if thresholds is None:  # noqa: SIM108

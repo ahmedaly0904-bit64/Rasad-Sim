@@ -31,7 +31,13 @@
 وُضع الفحص في `summarize` لا في `classify`، ليُمسك المُدخل عند حدّ النظام قبل أن ينتشر
 في المفاتيح الثمانية التي تُرجعها الدالة.
 
-## ما يزال مفتوحًا
+## أُغلقت: `classify` وحدها
 
-`classify(float("nan"))` ما زالت تُرجع `"high"`. رفضت `summarize` المُدخل الفاسد،
-لكن `classify` دالة عامة يمكن استدعاؤها وحدها، ولا حماية فيها بعد.
+كانت `classify(float("nan"))` تُرجع `"high"`: رفضت `summarize` المُدخل الفاسد،
+لكن `classify` دالة عامة يمكن استدعاؤها وحدها، ولم تكن فيها حماية.
+
+صارت ترفض `nan` بـ `ValueError`. والفحص `math.isnan` لا `math.isfinite`، لأن `inf`
+مخرَج مشروع هنا — هي الفئة 3 — وحكمها الصحيح `"high"`. `math.isfinite` كانت ستمسك
+الاثنين معًا، وهي مناسبة في `summarize` حيث يُرفض الاثنان فعلًا، وخاطئة في `classify`.
+الاختبار: `test_classify_rejects_nan_instead_of_calling_it_high`، و`test_classify_boundaries`
+يحرس أن `inf` ما زالت تُصنَّف.
