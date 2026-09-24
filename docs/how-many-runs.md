@@ -19,7 +19,7 @@ SEM = std / √N
 SEM / mean = cv / √N
 ```
 
-من [FINDINGS.md](../FINDINGS.md): `final_total_population` معامل تغايرها `cv = 0.28`
+من [FINDINGS.md](../FINDINGS.md): `final_total_population` معامل اختلافها `cv = 0.28`
 على مئة تشغيلة.
 
 ```
