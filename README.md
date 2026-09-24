@@ -54,8 +54,7 @@ What it found is in [`FINDINGS.md`](https://github.com/ahmedaly0904-bit64/rasad/
 pip install rasad-sim
 ```
 
-The distribution is `rasad-sim` because `rasad` collides with an existing name on
-PyPI. The import is unaffected:
+The distribution is `rasad-sim`; the import is `rasad`:
 
 ```python
 import rasad
