@@ -80,9 +80,10 @@ print(report.summary())
 report.plot().write_html("divergence.html")
 ```
 
-You get, for every output: mean, standard deviation, a 90% interval, and a variability class —
-**low**, **moderate**, or **high** — plus a curve showing how far the runs drift
-apart over time.
+You get, for every output, two lines: where the **mean** sits — with its standard error and a
+90% bootstrap confidence interval — and where **one run** lands — standard deviation, cv, a
+p05–p95 interval, and a variability class, **low**, **moderate**, or **high**. Plus a curve
+showing how far the runs drift apart over time.
 
 ---
 
@@ -93,12 +94,12 @@ apart over time.
 Applied to [Omran](https://github.com/ahmedaly0904-bit64/Omran), an agent-based model of
 Ibn Khaldun's theory of *asabiyyah*, **without modifying a line of it**:
 
-```
-final_total_population: mean 4,649.39 | cv 0.2841 | p05-p95 [2,704.75, 6,774.30] | high
-survivors:              mean 1.14     | cv 0.3059 | p05-p95 [1.00, 2.00]        | high
-total_wars:             mean 13.44    | cv 0.3986 | p05-p95 [6.00, 22.10]       | high
-total_famines:          mean 0.00     | cv 0.0000 | p05-p95 [0.00, 0.00]        | low
-```
+| Output | Mean | cv | p05–p95 | Class |
+|---|---|---|---|---|
+| `final_total_population` | 4,649.39 | 0.2841 | [2,704.75, 6,774.30] | high |
+| `survivors` | 1.14 | 0.3059 | [1.00, 2.00] | high |
+| `total_wars` | 13.44 | 0.3986 | [6.00, 22.10] | high |
+| `total_famines` | 0.00 | 0.0000 | [0.00, 0.00] | low |
 
 No numeric output of the model had low variability. Worse, the measurement exposed something the author
 did not know: **the same seed produced different results in different processes.**
@@ -137,14 +138,14 @@ one run and saying *"machine 7 is underperforming, investigate it"* is chasing a
 
 ---
 
-## Verified against simulations it was not written for
+## Verified beyond the model it was written for
 
 | Framework | Models | Result |
 |---|---|---|
 | [Mesa](https://github.com/projectmesa/mesa) | Schelling, WolfSheep, Boltzmann | works; WolfSheep's sheep population has high variability (cv 2.95 — usually extinct, occasionally not) |
 | [SimPy](https://simpy.readthedocs.io) | machine shop | works; see above |
 | [EoN](https://epidemicsonnetworks.readthedocs.io) | SIR on a network | works; epidemic duration has high variability (7.5 → 14.7) |
-| [Omran](https://github.com/ahmedaly0904-bit64/Omran) | asabiyyah model | works; see above |
+| [Omran](https://github.com/ahmedaly0904-bit64/Omran) | asabiyyah model | the model it was written for; see above |
 
 Examples: [`examples/`](examples/)
 
@@ -187,9 +188,10 @@ without needing a word on top of it.
   a sequence in others. Both would otherwise summarise a subset of the runs while reporting
   the full count.
 
-Accepted outputs: Python numbers, numpy scalars, 1-D numeric numpy arrays, lists and tuples.
-**Booleans are always rejected** — alone or inside a list — because an average of ones and
-zeros means nothing.
+Accepted outputs: real numbers only — Python numbers, numpy integer and float scalars, 1-D
+numpy arrays of those, lists and tuples. **Booleans are always rejected** — alone or inside a
+list — because an average of ones and zeros means nothing. **Complex numbers are rejected
+too**, because converting one to a float silently keeps the real part and drops the rest.
 
 ---
 
@@ -201,16 +203,22 @@ python -m venv .venv
 .venv/bin/pytest tests -v
 ```
 
-95 tests · 98% line coverage · 410 of 540 mutants killed · linted with ruff
+105 tests · 98% line coverage · 459 of 540 mutants killed · linted with ruff
 
 The mutation figure is the weakest of the three, and the gap between it and the coverage
 figure is the point: `validate_thresholds` was fully covered and still accepted two equal
 cutoffs, because no test passed the one input that separates `<` from `<=`. Coverage says
 a line ran. A surviving mutant says nothing checked what it did.
 
-Most of the survivors — 54 of 129 — are in the Omran adapter, whose tests assert bounds
-rather than values because Omran does not reproduce its own results. Against a simulation
-that answers differently each run, there is no tighter assertion to write.
+Of the 80 survivors, 31 are in `report` — chart labels and text layout that no test pins
+character by character — and many of the rest change only the wording of an error message
+that the tests match by substring. Some cannot be killed by any test: `value < 0` becoming
+`value <= 0` inside a branch that only infinities reach changes nothing. The Omran adapter
+accounts for 11.
+
+To reproduce: `mutmut run` with `OMRAN_SRC` set to an **absolute** path. mutmut runs the
+tests from inside its own `mutants/` directory, where the default relative path does not
+resolve — the Omran tests then skip, and its 56 mutants count as untested instead.
 
 The statistics are tested against models whose answers are known analytically: a constant
 must give a standard deviation of exactly zero; a random walk's divergence must grow as the
@@ -241,7 +249,7 @@ Two analyses of the code, in Arabic:
 رَصَد مرارًا ببذورٍ مختلفة، ثم يعرض لكل مخرَج متوسطه وانحرافه ومدى تسعين بالمئة وتصنيفًا لتغايره —
 **low** أو **moderate** أو **high** — مع منحنى يبيّن اتساع التباعد بين التشغيلات عبر الزمن.
 
-طُبِّق على أربعة مشاريع لم يُكتب لأجلها، فكشف في أحدها — محاكاة لنظرية العصبية عند ابن خلدون —
+طُبِّق على ثلاثة أطر محاكاة لم يُكتب لأجلها، وعلى عُمران الذي كُتب لأجله، فكشف في عُمران — محاكاة لنظرية العصبية عند ابن خلدون —
 أنها **لا تعيد إنتاج نتائجها بالبذرة نفسها**: تشغيلتان متطابقتان تفترقان عند السنة العشرين
 بفارق فردٍ واحد، يصير مئاتٍ بحلول السنة المئة. وهذا انتشار الخطأ في صورته المقيسة.
 
@@ -289,16 +297,23 @@ Most of the code here was written by AI models under explicit delegation and hum
 specification.** The model was never asked to write code and then write the thing that proves
 it correct. It was given a written contract and held to it.
 
-What the gates actually caught: a dead condition in a type check, a deprecated import, a
-missing return annotation, unreadable number formatting. **No logic error got through** —
-credit to the tests, not to the model.
+What the gates caught during implementation: a dead condition in a type check, a deprecated
+import, a missing return annotation, unreadable number formatting.
 
-And what none of them caught: an output that was constantly zero was classified as *high* variability
-when it was the most stable number in the report. Neither the reference models nor the review
-found it — **the real data did, on the first run against Omran.**
+What they did not catch — the logic errors that shipped:
 
-That is the boundary. Tests prove the arithmetic is right; only real data reveals the case
-nobody thought to write a test for.
+- An output that was constantly zero was classified as *high* variability when it was the most
+  stable number in the report. Neither the reference models nor the review found it — **the
+  real data did, on the first run against Omran.**
+- **Version 0.2.0 went to PyPI accepting numpy complex values and dropping their imaginary
+  part**, so every statistic described the real part alone. A plain Python `complex` was
+  rejected; a numpy one was not. A later code review of the whole package found it, together
+  with a threshold check that raised the wrong exception type, a `classify` that called `nan`
+  *high*, and an adapter that left the caller's global random state reseeded. All fixed in
+  0.2.1, each with a test that failed before the fix.
+
+That is the boundary. Tests prove right the arithmetic they were written for. Real data and a
+second reading find the cases nobody thought to write a test for.
 
 ---
 
