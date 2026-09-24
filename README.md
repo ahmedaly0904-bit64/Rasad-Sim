@@ -109,7 +109,8 @@ Ibn Khaldun's theory of *asabiyyah*, **without modifying a line of it**:
 | `total_wars` | 13.44 | 0.3986 | [6.00, 22.10] | high |
 | `total_famines` | 0.00 | 0.0000 | [0.00, 0.00] | low |
 
-No numeric output of the model had low variability. Worse, the measurement exposed something the author
+Three of the model's four numeric outputs had high variability; the fourth, famines, was low only
+because famines never happened. Worse, the measurement exposed something the author
 did not know: **the same seed produced different results in different processes.**
 
 Six runs with seed `1`, thirty simulated years:

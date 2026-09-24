@@ -7,8 +7,9 @@ Omran at commit `ccba093`, **with no line of it modified**.
 
 ## In one sentence
 
-> **No numeric output of Omran has low variability.** Its numbers describe a particular run,
-> not the behaviour of the model.
+> **Three of Omran's four numeric outputs have high variability, and the fourth, famines, is low
+> only because famines never happen.** Those numbers describe a particular run, not the behaviour
+> of the model.
 
 | Output | Mean | cv | Verdict |
 |---|---|---|---|
@@ -77,7 +78,7 @@ nobody thought to write a test for.
 
 ## الإجابة في جملة
 
-> **لا مخرَج عدديًّا واحدًا في عُمران تغيّره منخفض.** أرقامه تصف تشغيلة بعينها، لا سلوك النموذج.
+> **ثلاثة من مخرجات عُمران العددية الأربعة تغيّرها مرتفع، والرابع، المجاعات، منخفض فقط لأن المجاعة لا تحدث أصلًا.** أرقامه تصف تشغيلة بعينها، لا سلوك النموذج.
 
 | المخرَج | المتوسط | معامل الاختلاف | التصنيف |
 |---|---|---|---|
