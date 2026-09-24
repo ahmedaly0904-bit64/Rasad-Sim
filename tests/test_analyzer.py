@@ -228,3 +228,29 @@ def test_summarize_is_a_pure_function_of_its_input():
     """The bootstrap must not make the summary vary between calls."""
     values = [1.0, 5.0, 2.0, 8.0, 3.0, 13.0, 21.0]
     assert summarize(values) == summarize(values)
+
+def test_validate_thresholds_rejects_a_non_numeric_value_as_a_value_error():
+    """math.isfinite raises TypeError on a str or None, so a caller guarding measure() with except ValueError — the type both docstrings promise — was crashed instead."""
+    from rasad.analyzer import validate_thresholds
+
+    with pytest.raises(ValueError, match="finite positive number"):
+        validate_thresholds({"low": "0.05", "moderate": 0.3})
+    with pytest.raises(ValueError, match="finite positive number"):
+        validate_thresholds({"low": 0.05, "moderate": None})
+
+
+def test_validate_thresholds_rejects_a_boolean_value():
+    """True passed the numeric gate and became 1.0; the adapter rejects booleans as numbers everywhere else."""
+    from rasad.analyzer import validate_thresholds
+
+    with pytest.raises(ValueError, match="finite positive number"):
+        validate_thresholds({"low": True, "moderate": 0.3})
+
+
+def test_measure_reports_a_bad_threshold_type_as_a_value_error():
+    from reference_models import constant_model
+
+    import rasad
+
+    with pytest.raises(ValueError, match="finite positive number"):
+        rasad.measure(constant_model, {}, runs=3, thresholds={"low": "0.05", "moderate": 0.3})

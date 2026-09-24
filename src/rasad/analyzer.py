@@ -129,8 +129,9 @@ def validate_thresholds(thresholds: dict[str, float]) -> dict[str, float]:
     ----------
     thresholds
         A dict with exactly the keys ``low`` and ``moderate``. Both
-        values must be finite numbers greater than 0, and ``low``
-        must be strictly below ``moderate``.
+        values must be finite ``int`` or ``float`` values greater than 0
+        — never a ``bool`` — and ``low`` must be strictly below
+        ``moderate``.
 
     Returns
     -------
@@ -141,8 +142,10 @@ def validate_thresholds(thresholds: dict[str, float]) -> dict[str, float]:
     Raises
     ------
     ValueError
-        When the keys, the positivity/finiteness, or the ordering of the
-        values do not satisfy the rules above.
+        When the keys, the type, the positivity/finiteness, or the
+        ordering of the values do not satisfy the rules above. A
+        non-numeric value is reported as a ``ValueError`` too, so one
+        ``except ValueError`` catches every way the cutoffs can be wrong.
     """
     keys = set(thresholds)
     if keys != {"low", "moderate"}:
@@ -152,6 +155,14 @@ def validate_thresholds(thresholds: dict[str, float]) -> dict[str, float]:
     low = thresholds["low"]
     moderate = thresholds["moderate"]
     for name, value in (("low", low), ("moderate", moderate)):
+        # The type is checked here rather than left to math.isfinite, which
+        # raises TypeError on a str or None — an exception neither this
+        # function nor rasad.measure documents, so a caller guarding the call
+        # with ``except ValueError`` was crashed by bad configuration instead
+        # of told about it. A bool is excluded for the same reason the adapter
+        # excludes it from numbers: True is not a cutoff.
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} threshold must be a finite positive number, got {value!r}")
         if not (math.isfinite(value) and value > 0):
             raise ValueError(f"{name} threshold must be a finite positive number, got {value!r}")
     if not low < moderate:
