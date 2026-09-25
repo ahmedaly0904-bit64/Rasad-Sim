@@ -192,6 +192,10 @@ without needing a word on top of it.
 - **Only the seed varies.** Parameters are held fixed, so *"which parameter drives the
   result?"* is not answered yet. Sensitivity analysis is the next version.
 - **Execution is sequential.** No parallelism.
+- **The 90% interval on the mean undercovers skewed outputs at small run counts.** It is a
+  Student-t interval. Checked by simulation, it holds 89–90% on normal data and 88–90% on
+  Poisson data at every run count tried, but with 5 to 10 runs it covers about 83–85% on
+  exponential data and 76–80% on lognormal data (σ=1), rising to 87–89% at 100 runs.
 - **One value per output name per run.** A model is rejected when its output keys change
   between runs, and when a key keeps its name but changes shape — a number in some runs and
   a sequence in others. Both would otherwise summarise a subset of the runs while reporting
@@ -322,7 +326,7 @@ What they did not catch — the logic errors that shipped:
 - **The "90% confidence interval" on the mean was not 90% at small run counts.** It was a
   percentile bootstrap, which cannot reach outside the smallest and largest run, so it held
   the true mean about 50% of the time with two runs, 79% with five and 84% with ten. It is
-  now a Student-t interval, which holds close to 90% at every run count, and costs
+  now a Student-t interval, which holds close to 90% on normal data at every run count, and costs
   microseconds instead of ten thousand resamples per output.
 
 All fixed in 0.2.1, each with a test that failed before the fix.
